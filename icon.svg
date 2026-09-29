@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Delete conversation">
+  <rect width="64" height="64" rx="14" fill="#247bbf"/>
+  <g fill="none" stroke="#ffffff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19 23.5h26"/>
+    <path d="M27 23.5v-3.3c0-1.2 1-2.2 2.2-2.2h5.6c1.2 0 2.2 1 2.2 2.2v3.3"/>
+    <path d="M23.8 23.5l1.7 21.4c.1 1.6 1.4 2.8 3 2.8h6.9c1.6 0 2.9-1.2 3-2.8l1.7-21.4"/>
+    <path d="M29.2 30.5v9.5M34.8 30.5v9.5"/>
+  </g>
+</svg>

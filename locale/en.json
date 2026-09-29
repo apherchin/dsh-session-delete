@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Delete conversation",
+    "description": "Adds a \"Delete conversation\" row to the session context menu: permanently removes the session's on-disk data, cascades into subagent sessions, and refuses live sessions. Sizes and subagent counts are shown before you confirm."
+  }
+}

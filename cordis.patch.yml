@@ -1,0 +1,16 @@
+# Layer owned by the `@apherchin/dsh-session-delete` bundle.
+#
+# 一行装配：`name` 写**包名**，DSH 从 profile 的 node_modules 里解析它
+# （官方模板同款：`{ name: "@local/my-plugin" }`）。
+#
+# 正确的安装方式（会自动把本 bundle 记进 `dsh.profile.bundles`，**无需手工编辑 profile 文件**）：
+#   dsh plugin --profile <profile> add @apherchin/dsh-session-delete
+# ⚠️ 按包名安装的前提就是本文件存在 —— `package.json` 的 `dsh.bundle.patch` 指向它。
+#    没有这个声明的包，plug-in manager 会**回滚整次安装**（官方契约：装入了没有组合包
+#    patch 的包，会把 package.json 与 pnpm-lock.yaml 恢复原样）。
+#
+# ⚠️ 不要**同时**保留两种装法：若 profile 里已有指向本插件**绝对路径**的 insert 行，
+#    再按包名装一次会出现两行同名 entry。二选一。
+- insert:
+    - id: session-delete
+      name: "@apherchin/dsh-session-delete"

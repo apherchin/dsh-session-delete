@@ -1,0 +1,7 @@
+# 统一换行：仓库里一律 LF，跨平台检出不再被 autocrlf 改写（JS 包的标准做法）
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
