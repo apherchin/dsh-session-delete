@@ -1,6 +1,6 @@
 {
   "name": "@apherchin/dsh-session-delete",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DSH session-row menu \"Delete conversation\": permanently deletes a session's on-disk data, cascades into subagent sessions, and refuses live sessions (host + client plugin).",
   "type": "module",
   "main": "index.mjs",
