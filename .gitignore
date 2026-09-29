@@ -4,3 +4,6 @@ npm-debug.log*
 pnpm-debug.log*
 .DS_Store
 Thumbs.db
+
+# npm 打包产物
+*.tgz
