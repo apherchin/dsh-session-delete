@@ -1,7 +1,8 @@
 # @apherchin/dsh-session-delete
 
 > 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 补上官方缺失的**会话删除**能力。
-> 在**会话行的右键菜单**里加一行「删除对话」，点它 → 统计 → 确认 → 真删磁盘数据；顺带级联删掉子代理会话。
+> 在**会话行的右键菜单**里加**两行**：**「复制会话 ID」**（只读，随时可用）与**「删除对话」**（破坏性，永远排在最后）。
+> 点删除 → 统计 → 确认 → 真删磁盘数据；顺带级联删掉子代理会话。
 
 ![会话右键菜单效果图：官方四项之后是本插件新增的「复制会话 ID」与「删除对话」](assets/session-menu.png)
 
@@ -28,7 +29,7 @@ DSH 官方只有「归档会话」（隐藏，日志保留），**没有删除**
 | 入口 | 行为 |
 |---|---|
 | 会话行 `…` 菜单 → **删除对话**（`order: 500`，排在官方「归档会话」(400) 之后） | 打开确认弹窗；确认后**永久删除**该会话 |
-| 会话行 `…` 菜单 → **复制会话 ID**（`order: 450`） | 复制 id（只读动作，运行中的会话也能复制） |
+| 会话行 `…` 菜单 → **复制会话 ID**（`order: 450`） | 复制 id（只读动作，运行中的会话也能复制）—— **细节见下一节** |
 | 会话行 `…` 菜单 → 悬停/点击后弹窗里显示 | **删除前统计**：目标字节数、将被一并删除的子代理会话数、子会话 ID 清单（可选中复制） |
 
 - **级联删除**：删父会话时，把它派生的**子代理会话一并删掉**（子会话走与目标同一套删除序列 + 同一条广播）。
@@ -38,6 +39,47 @@ DSH 官方只有「归档会话」（隐藏，日志保留），**没有删除**
   - `attached === false` → 「已删除会话：`<id>`」；
   - 判不了 → 通用兜底（**绝不猜**）。
 - **统计失败绝不影响删除**：dryRun 失败或 5 秒超时一律降级为"未统计"，删除键保持可用。
+
+### 「复制会话 ID」：它复制的是什么、ID 从哪来、拿来干嘛
+
+**复制的是什么** —— 该会话的**原始 ID 字符串，逐字不改**：不剥 `session-` 前缀、不补前缀、不做大小写或格式转换。
+之所以"照抄不加工"，是因为这个串是要拿去和**磁盘目录名 / 日志文件 / 别的工具**对账的 —— 插件一旦替你改写，反而对不上。
+
+**ID 从哪来** —— 这一行由官方槽位 `sidebar.workspaces.session.menu.item` 渲染，ID 就是该槽位交给插件的 `sessionId` 属性
+（即宿主会话投影里的会话 ID）。插件**不猜、不生成、不额外查库**；又因为它是纯只读动作，**运行中的会话也能复制**
+（不碰宿主的活体判据，也不带任何 `disabled`）。
+
+**两种历史形态并存**（本机 `~\.dsh` 实测）：
+
+| 形态 | 实例 | 本机数量 |
+|---|---|---|
+| 带前缀（较早） | `session-7a87d682-0631-4781-94c6-73ceccb6f111` | 46 个会话目录 / 55 个投影缓存 |
+| 裸 UUIDv7（较新） | `019c8fef-cb98-4f2c-8521-a28e67e5e9ae` | 266 个会话目录 / 266 个投影缓存 |
+
+你复制到的就是**那个会话真实使用的那一个**。删除/定位路径对两种都成立：入口先 `isValidSessionId`（两种形态都放行），
+再在 `sessions` 根目录的**第一层项目目录**下按 **basename 精确匹配**定位（另有反穿越三重断言），
+**不自己重实现「cwd → 目录名」的转义规则**（避免与后端逻辑漂移）。
+
+**反馈（不会静默失败）** —— 先弹「正在复制」，剪贴板结果回来后回填：
+
+- 成功 → `已复制会话 ID：<id>`
+- 失败（剪贴板 API 不可用 / 被拒绝）→ `复制失败，请手动复制会话 ID：<id>`，并把 id 以 `<code>` + `user-select: all` 摆出来 —— **单击即可全选抄走**
+- 提示 **约 2 秒后自动消失**；后一次复制会取代前一次的提示（旧提示不会被"复活"）；整条路径 **绝不抛**（菜单回调里抛错会变成无人处理的错误）
+
+**拿来干嘛**（下表路径均为本机实测存在）：
+
+| 用途 | 形式 |
+|---|---|
+| 会话正文日志 | `~\.dsh\sessions\<项目目录>\<会话ID>\session.v4.jsonl.zstd`（项目目录名是**路径转义形态**，如 `--D-DSH-Day1--`） |
+| 侧栏投影缓存（标题 / 待办等） | `~\.dsh\storages\session_projcache\sessions\<会话ID>.json` |
+| 归档 / 置顶记账 | `~\.dsh\storages\workspace.json` → `global.archivedSessionIds` / `global.pinnedSessionIds` |
+| 报 bug / 排查 | 直接给出 ID 就能精确定位到那**一个**会话（不用再描述"哪个项目里的第几个"） |
+| 和本插件交互 | 宿主路由 `POST /api/session.delete` 吃的就是同一个 `sessionId` |
+| 和本仓库另一个插件联动 | 通知插件的点击回调协议 `dsh-attention:open/<会话ID>` |
+| 级联删除时 | 确认弹窗里列出的**子代理会话**也是同一套 ID 串（可选中复制） |
+
+> 为什么它是**单独一行**而不是塞在删除弹窗里：它只读、随时可用；而删除是破坏性动作。
+> 菜单里 **`order: 450`（复制）在 `order: 500`（删除）之前**，破坏性动作永远排最后。
 
 ### 安全边界
 
@@ -154,6 +196,36 @@ cost **before** you confirm.
   was opened, it says plainly that *its sidebar row will keep showing* until you close the tab or restart DSH.
 - **Statistics never block deletion**: a failed or 5s-timed-out dry run degrades to "not measured" and the delete
   button stays enabled.
+
+### "Copy session ID": what it copies, where the ID comes from, what it is for
+
+- **What it copies** — the session's **raw ID string, verbatim**: no prefix stripping, no reformatting. The string is
+  meant to be reconciled against directory names, log files and other tools, so rewriting it would only break the match.
+- **Where the ID comes from** — the row is rendered by the official `sidebar.workspaces.session.menu.item` slot, and the
+  ID is exactly the `sessionId` prop that slot hands to the plugin (the session ID from the host's session projection).
+  The plugin never guesses, generates or looks anything up; and since the action is read-only it also works on
+  **running** sessions (no liveness gate, no `disabled` state).
+- **Two historical shapes coexist** (measured on this machine): `session-<uuid4>` (46 session dirs / 55 cache files)
+  and a bare UUIDv7 such as `019c8fef-…` (266 / 266). You always copy the one that session actually uses; both are
+  accepted by `isValidSessionId`, and the directory is located by **exact basename match** inside the first-level
+  project dir of `sessions/` (with three anti-traversal assertions) instead of re-implementing the cwd→dirname escaping.
+- **Feedback is never silent** — a "copying" notice appears first, then resolves to `已复制会话 ID：<id>` or
+  `复制失败，请手动复制会话 ID：<id>` (the ID is rendered as `<code>` with `user-select: all`, so one click selects it).
+  The notice auto-dismisses after ~2s, a newer copy supersedes an older notice, and the whole path never throws.
+- **What it is for** — the ID is the key to that session's artefacts:
+
+| Use | Form |
+|---|---|
+| Session transcript | `~\.dsh\sessions\<project-dir>\<session-id>\session.v4.jsonl.zstd` (project dirs are escaped paths, e.g. `--D-DSH-Day1--`) |
+| Projection cache (title, pending) | `~\.dsh\storages\session_projcache\sessions\<session-id>.json` |
+| Archive / pin bookkeeping | `~\.dsh\storages\workspace.json` → `global.archivedSessionIds` / `global.pinnedSessionIds` |
+| Bug reports & log triage | Quote the ID and exactly that one session can be located |
+| Talking to this plugin | the host route `POST /api/session.delete` takes the same `sessionId` |
+| Talking to this repo's other plugin | the notification plugin's click-back protocol `dsh-attention:open/<session-id>` |
+| Cascade deletes | child sessions listed in the confirm dialog use the same ID strings (selectable) |
+
+> It is a separate row rather than something buried in the delete dialog because it is read-only and usable at any time:
+> `order: 450` (copy) precedes `order: 500` (delete), so the destructive action always comes last.
 
 ### Safety boundaries
 
