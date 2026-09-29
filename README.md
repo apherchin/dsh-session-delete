@@ -3,6 +3,10 @@
 > 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 补上官方缺失的**会话删除**能力。
 > 在**会话行的右键菜单**里加一行「删除对话」，点它 → 统计 → 确认 → 真删磁盘数据；顺带级联删掉子代理会话。
 
+![会话右键菜单效果图：官方四项之后是本插件新增的「复制会话 ID」与「删除对话」](assets/session-menu.png)
+
+> ☝️ 效果图：`置顶会话 / 重命名 / 分叉会话 / 归档会话` 是官方项；**`复制会话 ID`（order 450）与 `删除对话`（order 500）** 是本插件新增的两行 —— 破坏性动作排在最后。
+
 [中文](#中文) ｜ [English](#english)
 
 ---
@@ -124,6 +128,11 @@ node test/client-prime-probe.test.mjs # 正面探针：portal / 样式注入 / �
 ---
 
 ## English
+
+![Session context menu: the last two rows are added by this plugin](assets/session-menu.png)
+
+> The screenshot above: `Pin / Rename / Fork / Archive` are the official rows; **`Copy session ID` (order 450)** and
+> **`Delete conversation` (order 500)** are added by this plugin — the destructive action goes last.
 
 ### What it solves
 
